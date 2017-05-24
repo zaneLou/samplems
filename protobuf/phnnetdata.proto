@@ -1,0 +1,68 @@
+syntax = "proto3";
+//package tutorial;
+
+// [START java_declaration]
+option java_package = "com.phn.proto";
+option java_outer_classname = "PhnNetBuf";
+// [END java_declaration]
+
+//cd /Volumes/Opt4/svn_repository/sub_projects/Social/protobuf 
+//protoc phnnetdata.proto --java_out=../im_server/src/main/java/ --swift_out=../iOS/BeautyMessage/BeautyMessage/Classes/Proto/
+
+message EntryBuf {
+	string key = 1;
+	string value = 2;
+}
+
+message PacketBuf{
+	string packetId = 1; 
+	int64 ackId = 2; 
+	string namespace = 3;
+	string path = 4;
+	string hash = 5;
+	repeated EntryBuf heads = 6;
+	repeated EntryBuf params = 7;
+	bytes dataObj = 8;
+}
+
+
+//deprecated
+message PhnResponseBuf{
+	int32 code = 1; 
+	string content = 2; 
+	bytes dataObj = 3;
+}
+
+message PhnDataBuf{
+	string sessionId = 1;//tohead
+	int64 userId = 2;//tohead
+	string dataId = 3; //toremoved
+	int32 dataType = 4;//toremoved
+	string hash = 5; 
+	string lang = 6;//tohead
+	string device = 7;//tohead
+	int64 createDate = 8;//toremoved
+	int32 failTimes = 9;//toremoved
+	bytes dataObj = 10;//toremoved
+} 
+
+message PhnCredentialBuf{
+	int64 userId = 1; 
+	string token = 2;  
+}
+
+//Login
+message PhnLoginBuf{
+	string userName = 1; 
+	string password = 2; 
+}
+
+message PhnLogoutBuf{
+	int32 userName = 1; 
+}
+
+message PhnConnectBuf{
+	int32 userId = 1; 
+}
+
+

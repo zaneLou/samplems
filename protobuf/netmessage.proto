@@ -1,0 +1,380 @@
+option java_package = "com.hb.protocol";
+
+message NetMessage{
+	required int32 messageType = 1; //消息类型是必须的
+	optional bytes messageObj = 2;//消息体是可选的
+	optional int32 serialNumber = 3;//消息的序列号
+	optional string sessionId =4; //session id 如果client给server是不需要的所以应该是optional的
+}
+
+//GM 加钱专用
+message GMAddGoldsC2S{
+	required string accountId = 1;
+	required int64 addGolds = 2;
+}
+
+//GM 加钱专用
+message GMaddGoldS2C{
+	required CommonResult result =1;
+	optional int64 allGolds = 2;
+}
+
+//GM 查询有多少人在线
+message GMTotalGamersS2C{
+	required int32 totalGamers = 1;
+	required int32 totalSessions = 2;
+	repeated bytes roomGamerInfo =3;
+}
+
+message GMRoomGamersInfo{
+	required int32 roomId = 1;
+	required string roomName =2;
+	required int32 totalGamers4Seat = 3;
+	required int32 totalGamers4Tourist = 4;
+}
+
+
+//登录
+message LoginC2SMessage{
+	required string uuid = 1;//由client生成的id号
+	required string gameVersion = 2;//游戏版本
+	optional string facebookId = 3;//如果有值必须要赋值
+}
+
+//用来描述一张牌
+message CardInfo{
+	required int32 rank=1; //值
+	required int32 suite=2; //花色
+}
+
+enum LoginResult{
+    	SUCCESS = 1; //成功
+    	FAIL_VERSION = 2; //版本过低不能登录
+ }
+
+//登录反馈
+message LoginS2CMessage{
+	required LoginResult result = 1;
+	optional string accountId = 2;//有server生成的Id
+	optional int32 level =3; //等级
+	optional int64 golds =4; //金币
+	optional int32 exp = 5; //经验
+	optional string nickname= 6;//昵称
+	optional int32 head = 7;//头像
+	optional int32 upgradeExp = 8;//升级到下一级所需要的经验
+	optional int32 loginSendGolds = 9;//每天第一次登陆送的金币
+	optional bool isFinishedGuide = 10; //是否完成了新手引导
+	optional int32 unhandledMsg = 11;//未处理的消息的个数：例如加好友啊等等
+    optional string facebookId = 12;//facebook账号
+    repeated bytes fiveMaxCards = 13;//CardInfo 的数组 repeated 是可选的
+    optional int32 dailyBonusDays = 14;//每日签到的天数
+}
+
+//play now ：server-->clien  object data
+//playnow 的结果
+enum EnterRoomResult{
+	P_SUCCESS =1;  //成功
+	P_FAIL_GOLD =2;//如果玩家身上的钱小于了需要最小注的房间的限制 就会player now 失败
+	P_FAIL_SEATFULL = 3; //牌桌已经坐满了人不能加入新的玩家
+}
+message EnterRoomS2C{
+	required EnterRoomResult result = 1;
+	optional int32 roomId = 2; //success :进入到了那个房间 ：如果成功必须赋值
+	optional string tableId =3; //success:如果成功必须赋值
+	optional int32 seatId = 4; //玩家如果可以进入到房间直接坐下的座位id
+	repeated bytes playerInfos= 5; //所有在座位上得玩家的信息： PlayerInfoInTable [数组的方式给出]
+	repeated bytes boardCards = 6; //牌桌的上公共牌 如果存在就要赋值
+	optional bool isDearWithPlayer =7;//dear的位置是否是玩家坐庄
+	optional bool isWaiting = 8;//是否需要等待下一局
+	optional int64 minBet = 9;  //最小押注
+	optional int64 maxBet = 10;//最大押注
+	optional int64 minBonus = 11; //最小bonus
+	optional int64 maxBonus = 12;//最大bonus
+	optional int64 winMaxBonus = 13;//最大可以赢取的bonus限制
+}
+
+//在牌桌中玩家的详细信息：playnow
+//+ 一个人坐下后给其他的人的广播的消息
+message PlayerInfoInTable{
+	required int32 seatId = 1;
+	required string accountId = 2;
+	required string nickname =3;
+	required int32 level =4;
+	required int32 head = 5;
+	required int64 golds = 6;
+	required bool isWaiting = 7;
+	optional int64 ante =8;
+	optional int64 bonus = 9;
+	optional int64 flop = 10;
+	optional int64 turn = 11;
+	optional int64 river =12;
+	repeated bytes holdCards = 13; //玩家的手牌信息
+	repeated bytes maxFiveCards = 14;//玩家的最大5张牌
+	optional int32 giftNumber = 15;//如果存在礼物就发送礼物编号
+}
+
+//一个人坐下后给其他的人的广播的消息
+//暂时不用：2014-06-13
+//message SitDownNotice{
+//	required int32 seatId =1; //座位号
+//	required string accountId =2;
+//	required string nickName=3; //昵称
+//	required int64 golds=4; //金币
+//	required int32 head=5; //头像
+//	required int32 level = 6; //等级
+//	optional int32 giftNumber=7;
+//}
+
+//下注（ante，bonus，flop，trun，river 通用）
+message BetC2S{
+	required int64 golds = 1; //下注的金额
+}
+
+//下注结果
+enum BETRESULT{
+	BET_SUCCESS =1; //下注成功
+	BET_FAIL_GOLDS =2; //金钱不够不能下注
+	BET_FAIL_MIN = 3;//下注失败：低于了最小下注的额度
+	BET_FAIL_MAX = 4;//下注失败：高于了最大的下注额度
+	BET_FAIL_RULE = 5; //下注失败：不和规则，例如 Flop 只能是ante的2倍，turn /river 只能和ante一致
+}
+message BetS2C{
+	required BETRESULT result =1; //押注的结果
+	optional int64 allGolds = 2;// 下完注后玩家还有多少钱：client来更新玩家的信息
+}
+
+//下注成功后才广播下注的消息
+message BetNotice{
+	required int32 seatId=1;//座位号
+	required int64 golds = 2;//下了多少金币
+	required int64 allGolds = 3;//玩家身上还有多少钱
+}
+
+//弃牌的广播：超时弃牌广播给所有人 ，主动弃牌广播给其他玩家
+message FoldNotice{
+	repeated int32 seatIds =1; //哪几位玩家弃牌了
+}
+
+//check的广播：超时弃牌广播给所有人 ，主动看牌广播给其他玩家
+message CheckNotice{
+	repeated int32 seatIds =1; //哪几位玩家看牌了
+}
+
+//发牌信息：如果是手牌 数组大小是2，如果前3张牌内容大小是3 如果是第4和第五张牌 大小是1
+message PostCards{
+	repeated bytes cards =1;
+}
+
+enum MaxCardType{
+	ROYAL_FLUSH =1;//皇家同花顺
+	STRAIGHT_FLUSH =2;//同花顺
+	FOUR_OF_A_KIND =3;//4条
+	FULL_HOUSE = 4;//葫芦(3+2)
+	FLUSH = 5;//同花
+	STRAIGHT=6;//顺子
+	THREE_OF_A_KIND =7;//3条
+	TWO_PAIRS =8;// 2对
+	ONE_PAIR =9;// 1对
+	HIGH_CARD =10;//高牌
+}
+
+//一局游戏的输赢结果
+enum RoundResultType{
+	WIN= 1;  //赢
+	LOSE = 2; //输
+	DRAW =3; //平局
+}
+
+//牌局的结果的详细信息
+message RoundResultInfo{
+	required int32 seatId = 1; //座位
+    optional RoundResultType bonusResult = 2;//输赢
+	optional int64 bonusValue= 3;//下的bonus 数值
+	optional int32 bonusX = 4;//赢bonus时的倍数
+	optional int32 addExpWithBonus = 5;//bonus增加的经验
+
+	required RoundResultType handResult = 6; //输赢或者平局
+	required int64 totalGolds = 7;//输赢的金钱总数
+    repeated bytes fiveCards = 8; //最大的5张牌
+    repeated bytes holdCards = 9; //手牌
+    required MaxCardType cardType =10; //成牌类型
+    required int32 addExpWithHand = 11;//牌局输赢增加的经验
+
+	optional int64 rewardGolds = 12;//升级后奖励的金币
+	optional int32 level = 13;//如果玩家升级了才告诉这个等级(当前等级)
+	optional int32 exp = 14;//如果玩家升级了赋值玩家所有的经验(当前经验)
+
+	required int64 allGolds = 15;//目前玩家身上的钱是多少
+	optional int64 dealerAllGolds = 16;//如果是玩家坐庄目前庄家身上的钱数
+}
+
+//一局的牌局结果
+message RoundResult{
+	repeated bytes fiveCardsWithDealer = 1; //dealer的最大5张牌
+	repeated bytes holdCardsWithDealer = 2; //dealer的手牌
+	required MaxCardType maxTypeWithDealer =3; //最大牌型
+	repeated bytes resultInfo = 4;//玩家结算的数组
+}
+
+//返回大厅
+//message GotoLobbyS2C{
+//	required int64 golds = 1;
+//}
+
+//返回大厅的广播
+message GotoLobbyNotice{
+	required int32 seatId = 1;
+}
+
+//玩家自己选择房间：需要一个消息号
+//server回复的还是EnterRoomS2C 消息号也不改变
+message SelectedRoomC2S{
+	required int32 roomId =1;
+}
+
+//站起的广播
+message StandUpNotice{
+	required int32 seatId =1;
+}
+
+//站起后选择位置坐下
+message SitDownC2S{
+	required int32 seatId =1;
+}
+
+//一个通用的结果：成功 or 失败
+enum CommonResult{
+	C_SUCCESS =1;
+	C_FAIL = 2;
+}
+
+//坐下的结果
+message SitDownS2C{
+	required CommonResult result =1;
+	optional bool isWaiting = 2;//是否需要等待下一局
+}
+
+//修改头像c--s的消息
+message ModifyHeadC2S{
+	required int32 headId = 1;
+}
+
+//修改nickname
+message ModifyNickNameC2S{
+	required string nickname = 1;
+}
+
+//打开好友列表的反馈
+message OpenFrinedListS2C{
+	repeated bytes friendListInfo = 1;
+}
+
+//好友的信息
+message FriendInfo{
+	required string nickname = 1;
+	required int64 golds = 2;
+	required int32 head = 3;
+	optional int32 roomId =4;
+	optional string tableId = 5;
+}
+
+//打开未处理的消息列表
+message OpenInformationListS2C{
+	repeated bytes infomationListInfo = 1;
+}
+
+//消息信息: 这里的nickname和Uid是消息发起者的信息
+//客户端要显示：xx(uid) 要和你成为好友
+message InforamtionInfo{
+	required int64  infoId = 1; //未处理的消息id
+	required string nickname = 2; //发邀请的人的昵称
+	required string uId = 3;//发邀请的人的UID
+	required int32 head = 4;
+}
+
+//搜索好友
+message SearchFriendC2S{
+	required string uId =1;
+}
+
+//搜索结果
+message SearchFriendS2C{
+	required CommonResult result =1;
+	optional bytes friendInfo = 2; // 对应---FriendInfo.message
+}
+
+//邀请好友C2S
+message  InviteFriendC2S{
+	required string uId = 1; //好友的uid
+}
+
+//处理自己收到的消息
+message DealInfomationC2S{
+	required int64 infoId = 1; //要处理的消息id
+    required DealType type = 2; //处置方式：接受或者拒绝
+}
+enum DealType{
+	ACCEPT = 1;
+	REFUSE = 2;
+}
+
+//送礼物
+message SendGiftC2S{
+	required int32 giftNumber = 1;
+    optional bool isAll = 2; //是否全桌都送
+    optional int32 seatId = 3; //送给指定的位置
+}
+
+//送礼物的广播
+message SendGiftNotice{
+	required CommonResult result = 1; //是否可以送：失败只有一个条件 钱不够不能送
+	optional int32 giftNumber = 2;
+	optional int32 srcSeatId = 3;
+	optional bool isAll = 4;
+	optional int32 targetSeatId = 5;
+}
+
+/** 加入好友的牌桌 ：回复的是EnterRoomS2C*/
+message JoinFriendTableC2S{
+	required int32 roomId =1;
+	required string tableId = 2;
+}
+
+/**
+ *  聊天+表情
+ */
+message ChatOrFaceC2S{
+	required int32 number = 1;
+}
+
+/**
+ * 聊天+表情的广播
+ */
+message ChatOrFaceNotice{
+	required int32 seatId = 1;
+	required int32 number = 2;
+}
+
+/** 倒计时的时间 */
+message CountDownS2C{
+	required int32 secondValue = 1;
+}
+
+/** 充值 */
+message ChargeC2S{
+	required string receipt =1;
+}
+
+/** 充值的反馈 */
+message ChargeS2C{
+	required ChargeResult result = 1;
+	optional int64 golds = 2;
+}
+enum ChargeResult{
+	CHARGE_SUCCESS = 1;
+	CHARGE_FAIL_VERIFY =2;//已经验证过的账单
+	CHARGE_FAIL_ISNOTPOKER =3;//不是poker的账单
+	CHARGE_FAIL_OTHER = 4;//未知的错误
+}
+
+

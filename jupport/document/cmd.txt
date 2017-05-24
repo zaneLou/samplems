@@ -1,0 +1,1 @@
+cd /Users/zane/data1/git/base_web/target/classes && jar cvf web-api.jar ./*  && mv web-api.jar ../../resources
