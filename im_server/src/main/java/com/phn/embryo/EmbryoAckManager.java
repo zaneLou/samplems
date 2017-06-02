@@ -30,7 +30,7 @@ import com.corundumstudio.socketio.scheduler.CancelableScheduler;
 import com.corundumstudio.socketio.scheduler.SchedulerKey;
 import com.corundumstudio.socketio.scheduler.SchedulerKey.Type;
 
-public class EmbryoAckManager {
+public class EmbryoAckManager implements Disconnectable{
 
     class AckEntry {
 
@@ -146,6 +146,7 @@ public class EmbryoAckManager {
         }, callback.getTimeout(), TimeUnit.SECONDS);
     }
 
+    @Override
     public void onDisconnect(EmbryoTunnel client) {
         AckEntry e = ackEntries.remove(client.getSessionId());
         if (e == null) {

@@ -12,6 +12,7 @@ public class EmbryoTunnel {
 	private final AtomicBoolean disconnected = new AtomicBoolean();
 	protected Channel channel;
 	protected EmbryoAckManager ackManager;
+	protected String spacename;
 	
 	public EmbryoTunnel(Channel channel, EmbryoAckManager ackManager){
 		super();

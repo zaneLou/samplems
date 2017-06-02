@@ -5,7 +5,9 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.corundumstudio.socketio.Configuration;
 import io.netty.util.internal.PlatformDependent;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class EmbryoNamespacesHub {
 
 	private final ConcurrentMap<String, EmbryoNamespace> namespaces = PlatformDependent.newConcurrentHashMap();
@@ -27,29 +29,27 @@ public class EmbryoNamespacesHub {
 		return namespace;
 	}
 	
-	//TODO
-//	public Iterable<SocketIOClient> getRoomClients(String room) {
-//		List<Iterable<SocketIOClient>> allClients = new ArrayList<Iterable<SocketIOClient>>();
-//		for (EmbryoNamespace namespace : namespaces.values()) {
-//			Iterable<SocketIOClient> clients = ((Namespace) namespace).getRoomClients(room);
-//			allClients.add(clients);
-//		}
-//		return new CompositeIterable<SocketIOClient>(allClients);
-//	}
-
+	public void shutdown() {
+	    for (EmbryoNamespace namespace : namespaces.values()) {
+	        namespace.shutdown();
+        }
+	}
+	
+	/*
+	 * EmbryoNamespace
+	 */
 	public EmbryoNamespace get(String name) {
 		return namespaces.get(name);
 	}
 
-	//TODO
-//	public void remove(String name) {
-//		EmbryoNamespace namespace = namespaces.remove(name);
-//		if (namespace != null) {
-//			namespace.getBroadcastOperations().disconnect();
-//		}
-//	}
-
 	public Collection<EmbryoNamespace> getAllNamespaces() {
-		return namespaces.values();
+        return namespaces.values();
+    }
+	
+	public void remove(String name) {
+		EmbryoNamespace namespace = namespaces.remove(name);
+		log.info("remove namespace {}", namespace);
 	}
+
+	
 }

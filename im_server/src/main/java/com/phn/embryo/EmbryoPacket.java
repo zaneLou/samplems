@@ -27,8 +27,10 @@ public interface EmbryoPacket {
 	public String getHash();
 	
 	public List<EmbryoEntry> getHeadsList();
+	public EmbryoEntry getHead(String key);
 	
 	public List<EmbryoEntry> getParams();
+	public EmbryoEntry getParam(String key);
 	
 	public byte[] getBytes();
 

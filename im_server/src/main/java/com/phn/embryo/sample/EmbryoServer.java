@@ -5,11 +5,10 @@ import java.io.InputStream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.phn.socketio.listener.PhnDataListener;
+import com.phn.tojoy.channel.PacketBufServerChannelInitializer;
+import com.phn.tojoy.embryo.TojoyNamespacesHub;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,9 +21,6 @@ public class EmbryoServer {
 	}
 
 	protected SocketIOServer server;
-
-	@Autowired
-	protected PhnDataListener phnDataListener;
 	
 	@PostConstruct
 	public void postConstruct() {
@@ -37,11 +33,12 @@ public class EmbryoServer {
         config.setKeyStore(stream);
 		server = new SocketIOServer(config);
 		//use PacketBufChannelInitializer
-		PacketBufServerChannelInitializer channelInitializer = new PacketBufServerChannelInitializer();
+		TojoyNamespacesHub namespacesHub = new TojoyNamespacesHub(config);
+		PacketBufServerChannelInitializer channelInitializer = new PacketBufServerChannelInitializer(namespacesHub);
 		server.setPipelineFactory(channelInitializer);
 		
 		server.start();
-		log.info("SocketIOServer start");
+		log.info("SocketIOServer start...");
 	}
 
 	@PreDestroy

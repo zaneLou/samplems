@@ -28,21 +28,24 @@ import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.ssl.SslHandler;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelInitializer {
 
-public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelInitializer{
-
-    private static final Logger log = LoggerFactory.getLogger(SocketIOChannelInitializer.class);
-
-    private EmbryoAckManager ackManager;
-    
-    private CancelableScheduler scheduler = new HashedWheelTimeoutScheduler();
-    private SSLContext sslContext;
-    private Configuration configuration;
+    protected CancelableScheduler scheduler = new HashedWheelTimeoutScheduler();
+    protected SSLContext sslContext;
+    protected Configuration configuration;
+    protected final EmbryoNamespacesHub namespacesHub;
     
     //need implements
     public abstract MessageLite getPrototype();
     public abstract ChannelInboundHandlerAdapter getInPacketHandler();
+    
+    public AbstractEmbryoChannelInitializer(EmbryoNamespacesHub namespacesHub){
+        super();
+        this.namespacesHub = namespacesHub;
+    }
     
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
@@ -52,10 +55,6 @@ public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelIn
     @Override
 	public void start(Configuration configuration, NamespacesHub namespacesHub) {
         this.configuration = configuration;
-
-        ackManager = new EmbryoAckManager(scheduler);
-        String connectPath = configuration.getContext() + "/";
-
         boolean isSsl = configuration.getKeyStore() != null;
         if (isSsl) {
             try {
@@ -64,7 +63,6 @@ public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelIn
                 throw new IllegalStateException(e);
             }
         }
-        
     }
     
     @Override
@@ -87,7 +85,6 @@ public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelIn
             pipeline.addLast(SSL_HANDLER, new SslHandler(engine));
         }
     }
-
     
     /**
      * Adds the socketio channel handlers
@@ -126,11 +123,12 @@ public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelIn
         serverContext.init(kmf.getKeyManagers(), managers, null);
         return serverContext;
     }
-
+    
     @Override
 	public void stop() {
         StoreFactory factory = configuration.getStoreFactory();
         factory.shutdown();
         scheduler.shutdown();
+        namespacesHub.shutdown();
     }
 }

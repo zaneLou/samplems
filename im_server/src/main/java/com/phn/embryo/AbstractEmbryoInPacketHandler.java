@@ -13,16 +13,20 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import lombok.extern.slf4j.Slf4j;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 
 @Sharable
 @Slf4j
-public abstract class AbstractEmbryoInPacketHandler extends ChannelInboundHandlerAdapter{
+public abstract class AbstractEmbryoInPacketHandler extends ChannelInboundHandlerAdapter implements DisconnectableHub{
 
-	private final Configuration configuration;
-    private final EmbryoNamespacesHub namespacesHub;
-    private final StoreFactory storeFactory;
-    private final CancelableScheduler disconnectScheduler;
-    private final EmbryoAckManager ackManager;
+    protected final Configuration configuration;
+	protected final EmbryoNamespacesHub namespacesHub;
+    protected final StoreFactory storeFactory;
+    protected final CancelableScheduler disconnectScheduler;
+    protected final EmbryoAckManager ackManager;
+    
+    protected AttributeKey<Boolean> hasTunnel = AttributeKey.newInstance("hasTunnel");
     
     //register login logout connect ack message 
 	public AbstractEmbryoInPacketHandler(Configuration configuration, EmbryoNamespacesHub namespacesHub,
@@ -41,8 +45,8 @@ public abstract class AbstractEmbryoInPacketHandler extends ChannelInboundHandle
         disconnectScheduler.schedule(key, new Runnable() {
             @Override
             public void run() {
-                ctx.channel().close();
                 log.debug("Client with ip {} opened channel but doesn't send any data! Channel closed!", ctx.channel().remoteAddress());
+                ctx.channel().close();
             }
         }, configuration.getFirstDataTimeout(), TimeUnit.MILLISECONDS);
         super.channelActive(ctx);
@@ -55,29 +59,73 @@ public abstract class AbstractEmbryoInPacketHandler extends ChannelInboundHandle
         if (msg instanceof EmbryoPacket) {
         	EmbryoPacket packet = (EmbryoPacket) msg;
             Channel channel = ctx.channel();
-           	//Get Client
-            EmbryoNamespace namespace = namespacesHub.get(packet.getNamespace());
-            if(namespace==null){
-            	log.error("Not found namespace {} ", packet.getNamespace());
-            	return;
-            }
-            EmbryoTunnel client = namespace.get(channel);
-            if(client == null){
-            	client = new EmbryoTunnel(channel, ackManager);
-            	namespace.add(channel, client);
-            	namespace.addClient(client);
-            }
+            //Get Client
+            EmbryoTunnel client = getClient(packet.getNamespace(), channel, true);
             receivePacket(client, packet);
+            
+            //Add Timeout
+            disconnectScheduler.schedule(key, new Runnable() {
+                @Override
+                public void run() {
+                    ctx.channel().close();
+                    disconnect(packet.getNamespace(), ctx.channel());
+                    log.debug("Client with sessionId {} opened channel but ping timeout!", channel.id().asLongText());
+                }
+            }, configuration.getPingTimeout(), TimeUnit.MILLISECONDS);
         }
     }
     
     public abstract void receivePacket(EmbryoTunnel client, EmbryoPacket packet);
     
+    public void disconnect(String spacename, Channel channel) {
+        EmbryoTunnel client = getClient(spacename, channel, false);
+        if(client==null){
+            log.error("onDisconnect not found  {} ", channel.id().asLongText());
+        }
+        onDisconnect(client);
+    }
+    
+    public EmbryoTunnel getClient(String spacename, Channel channel, boolean createIfNoExist) {
+        EmbryoTunnel client = null;
+        EmbryoNamespace namespace = namespacesHub.get(spacename);
+        if (namespace == null) {
+            log.warn("Not found namespace {} ", spacename);
+            return client;
+        }
+        Attribute<Boolean> value = channel.attr(hasTunnel);
+        if (value != null && !value.get()) {
+            client = namespace.get(channel.id().asLongText());
+        }
+        
+        if(client==null && createIfNoExist){
+            client = new EmbryoTunnel(channel, ackManager);
+            client.setSpacename(spacename);
+            namespace.addClient(client);
+        }
+        return client;
+    }
+    
+    @Override
+    public void onDisconnect(EmbryoTunnel client) {
+        ackManager.onDisconnect(client);
+        EmbryoNamespace namespace = namespacesHub.get(client.getSpacename());
+        if(namespace==null){
+            log.error("onDisconnect namespace {} ", client.getSpacename());
+        }else{
+            namespace.removeClient(client.getSessionId());
+        }
+    }
+    
     public void processPacket(EmbryoTunnel client, EmbryoPacket packet){
     	EmbryoNamespace namespace = namespacesHub.get(packet.getNamespace());
-    	if(packet.getPath().equals(EmbryoPacket.PATH_REGISTER)){
-    		namespace.onRegister(client, packet);
-    	}
+    	switch (packet.getPath()) {
+            case EmbryoPacket.PATH_REGISTER:
+                namespace.onRegister(client, packet);
+                break;
+
+            default:
+                break;
+        }
     }
     
 }
