@@ -803,7 +803,7 @@ public final class PhnNetBuf {
   /**
    * Protobuf type {@code PacketBuf}
    */
-  public  static final class PacketBuf extends
+  public  static  class PacketBuf extends
       com.google.protobuf.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:PacketBuf)
       PacketBufOrBuilder {

@@ -33,3 +33,13 @@ ssh-add -K ~/.ssh/github_rsa
 
 https://help.github.com/articles/error-repository-not-found/
 https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/
+
+
+ssh -T git@github.com
+
+
+git@mygithub:zaneLou/samplems.git
+
+	url = git@mygithub:zaneLou/samplems.git
+	url = https://github.com/zaneLou/samplems.git
+	

@@ -29,8 +29,9 @@ import com.corundumstudio.socketio.AckCallback;
 import com.corundumstudio.socketio.scheduler.CancelableScheduler;
 import com.corundumstudio.socketio.scheduler.SchedulerKey;
 import com.corundumstudio.socketio.scheduler.SchedulerKey.Type;
+import com.google.protobuf.MessageLite;
 
-public class EmbryoAckManager implements Disconnectable{
+public abstract class AbstractEmbryoAckManager implements Disconnectable{
 
     class AckEntry {
 
@@ -61,16 +62,18 @@ public class EmbryoAckManager implements Disconnectable{
 
     }
 
-    private static final Logger log = LoggerFactory.getLogger(EmbryoAckManager.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractEmbryoAckManager.class);
 
     private final Map<String, AckEntry> ackEntries = PlatformDependent.newConcurrentHashMap();
 
     private final CancelableScheduler scheduler;
 
-    public EmbryoAckManager(CancelableScheduler scheduler) {
+    public AbstractEmbryoAckManager(CancelableScheduler scheduler) {
         super();
         this.scheduler = scheduler;
     }
+    
+    public abstract long getAckId(MessageLite packet);
 
     public void initAckIndex(String sessionId, long index) {
         AckEntry ackEntry = getAckEntry(sessionId);
@@ -88,13 +91,13 @@ public class EmbryoAckManager implements Disconnectable{
         }
         return ackEntry;
     }
-
+    
     @SuppressWarnings("unchecked")
-    public void onAck(EmbryoTunnel client, EmbryoPacket packet) {
-    	EmbryoAckSchedulerKey key = new EmbryoAckSchedulerKey(Type.ACK_TIMEOUT, client.getSessionId(), packet.getAckId());
+    public void onAck(AbstractEmbryoTunnel client, MessageLite packet) {
+    	EmbryoAckSchedulerKey key = new EmbryoAckSchedulerKey(Type.ACK_TIMEOUT, client.getSessionId(), getAckId(packet));
         scheduler.cancel(key);
 
-        AckCallback callback = removeCallback(client.getSessionId(), packet.getAckId());
+        AckCallback callback = removeCallback(client.getSessionId(), getAckId(packet));
         if (callback == null) {
             return;
         }
@@ -147,7 +150,7 @@ public class EmbryoAckManager implements Disconnectable{
     }
 
     @Override
-    public void onDisconnect(EmbryoTunnel client) {
+    public void onDisconnect(AbstractEmbryoTunnel client) {
         AckEntry e = ackEntries.remove(client.getSessionId());
         if (e == null) {
             return;

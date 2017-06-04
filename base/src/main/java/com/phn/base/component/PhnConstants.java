@@ -8,12 +8,13 @@ public interface PhnConstants {
 	public static String TestUserName2 = "test2";
 	public static String TestPassword = "111222";
 
+	public static String IM_Namespace = "/phn_v1";
+
+	//deprecated
+	public static String SocketIO_Data_Event = "data";
 	public static String User_Tokens_Device_Mobile = "mobile";
 	public static String User_Tokens_Device_Desktop = "desktop";
-
-	public static String SocketIO_Namespace = "/phn_v1";
-	public static String SocketIO_Data_Event = "data";
-
+	
 	public static int SocketIO_Data_Type_LoginByUsername = 0;
 	public static int SocketIO_Data_Type_LoginByToken = 1;
 	public static int SocketIO_Data_Type_Logout = 10;

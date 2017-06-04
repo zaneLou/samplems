@@ -3,7 +3,8 @@ package com.phn.tojoy.embryo;
 import com.corundumstudio.socketio.store.StoreFactory;
 import com.google.protobuf.MessageLite;
 import com.phn.embryo.AbstractEmbryoChannelInitializer;
-import com.phn.embryo.EmbryoAckManager;
+import com.phn.embryo.AbstractEmbryoAckManager;
+import com.phn.embryo.AbstractEmbryoInPacketHandler;
 import com.phn.embryo.EmbryoNamespacesHub;
 import com.phn.proto.PhnNetBuf.PacketBuf;
 
@@ -28,9 +29,9 @@ public class TojoyChannelInitializer extends AbstractEmbryoChannelInitializer{
 
     @Override
     public ChannelInboundHandlerAdapter getInPacketHandler() {
-        EmbryoAckManager ackManager = new EmbryoAckManager(scheduler);
+        AbstractEmbryoAckManager ackManager = new TojoyAckManager(scheduler);
         StoreFactory storeFactory = configuration.getStoreFactory();
-        TojoyInPacketHandler handler = new TojoyInPacketHandler(configuration, namespacesHub, storeFactory, scheduler, ackManager);
+        AbstractEmbryoInPacketHandler handler = new TojoyInPacketHandler(configuration, namespacesHub, storeFactory, scheduler, ackManager);
         return handler;
     }
 

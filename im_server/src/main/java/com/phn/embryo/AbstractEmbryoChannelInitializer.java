@@ -8,9 +8,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOChannelInitializer;
 import com.corundumstudio.socketio.namespace.NamespacesHub;
@@ -38,7 +35,7 @@ public abstract class AbstractEmbryoChannelInitializer extends SocketIOChannelIn
     protected Configuration configuration;
     protected final EmbryoNamespacesHub namespacesHub;
     
-    //need implements
+    //need implements:TOTEST
     public abstract MessageLite getPrototype();
     public abstract ChannelInboundHandlerAdapter getInPacketHandler();
     

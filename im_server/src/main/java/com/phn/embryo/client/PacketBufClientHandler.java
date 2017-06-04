@@ -13,33 +13,50 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.phn.embryo.sample;
+package com.phn.embryo.client;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.GenericFutureListener;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.phn.proto.PhnNetBuf.PacketBuf;
 
 @Slf4j
 public class PacketBufClientHandler extends SimpleChannelInboundHandler<PacketBuf> {
 
+	private EmbryoClientReceiverListener receiverListener;
+	
 	// Stateful properties
 	private volatile Channel channel;
-
-	public static AtomicInteger onRecieveCount = new AtomicInteger(0);
+	private ChannelFuture lastWriteFuture ;
 	
 	public PacketBufClientHandler() {
 		super(false);
 	}
 
-	public void sendPacket(int index){
+	public boolean isActive(){
+		return channel.isActive();
+	}
+	
+	public boolean isOpen(){
+		return channel.isOpen();
+	}
+	
+	public void sendPacket(PacketBuf packetBuf){
 		log.info("PacketBufClientHandler sendPacket");
-		PacketBuf.Builder builer = PacketBuf.newBuilder();
-		channel.writeAndFlush(builer.setPacketId(index + "").setPath("paht").build());
+		lastWriteFuture = channel.writeAndFlush(packetBuf);
+		lastWriteFuture.addListener(new GenericFutureListener<ChannelFuture>() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                	log.error("client write failed: ");
+                    future.cause().printStackTrace(System.err);
+                }
+            }
+        });
 	}
 	
 	@Override
@@ -49,7 +66,9 @@ public class PacketBufClientHandler extends SimpleChannelInboundHandler<PacketBu
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, PacketBuf packetBuf) throws Exception {
-		log.info("read packetBuf:{} from server, onRecieveCount {}", packetBuf, onRecieveCount.incrementAndGet());
+		log.info("read packetBuf:{}from server", packetBuf);
+		if(receiverListener!=null)
+			receiverListener.onReceiver(packetBuf);
 	}
 
 	@Override
@@ -57,4 +76,20 @@ public class PacketBufClientHandler extends SimpleChannelInboundHandler<PacketBu
 		cause.printStackTrace();
 		ctx.close();
 	}
+
+	public void setReceiverListener(EmbryoClientReceiverListener receiverListener) {
+		this.receiverListener = receiverListener;
+	}
+	
+	public void shutdown() {
+		 // Wait until all messages are flushed before closing the channel.
+        if (lastWriteFuture != null) {
+            try {
+				lastWriteFuture.sync();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+        }
+	}
+	
 }

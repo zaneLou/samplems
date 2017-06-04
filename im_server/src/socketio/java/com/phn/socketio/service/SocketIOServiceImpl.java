@@ -37,7 +37,7 @@ public class SocketIOServiceImpl implements SocketIOService {
         InputStream stream = getClass().getResourceAsStream("/phnimserver.jks");
         config.setKeyStore(stream);
 		server = new SocketIOServer(config);
-		final SocketIONamespace namespace = server.addNamespace(PhnConstants.SocketIO_Namespace);
+		final SocketIONamespace namespace = server.addNamespace(PhnConstants.IM_Namespace);
 		//namespace.addEventListener(PhnConstants.SocketIO_Data_Event, byte[].class, phnDataListener);
 		namespace.addEventListener(PhnConstants.SocketIO_Data_Event, String.class, phnDataListener);
 		namespace.addConnectListener(new ConnectListener() {

@@ -13,8 +13,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package com.phn.embryo.sample;
+package com.phn.embryo.client;
 
+import com.corundumstudio.socketio.Configuration;
 import com.phn.proto.PhnNetBuf.PacketBuf;
 
 import io.netty.channel.ChannelInitializer;
@@ -30,10 +31,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PacketBufClientInitializer extends ChannelInitializer<SocketChannel> {
 
+	private final Configuration configuration;
     private final SslContext sslCtx;
-
-    public PacketBufClientInitializer(SslContext sslCtx) {
+    protected PacketBufClientHandler packetBufClientHandler;
+    
+    public PacketBufClientInitializer(SslContext sslCtx, Configuration configuration) {
         this.sslCtx = sslCtx;
+        this.configuration = configuration;
+        packetBufClientHandler = new PacketBufClientHandler();
     }
 
     @Override
@@ -41,7 +46,7 @@ public class PacketBufClientInitializer extends ChannelInitializer<SocketChannel
     	log.info("PacketBufClientInitializer initChannel");
         ChannelPipeline p = ch.pipeline();
         if (sslCtx != null) {
-            p.addLast(sslCtx.newHandler(ch.alloc(), "127.0.0.1", 8088));
+            p.addLast(sslCtx.newHandler(ch.alloc(), configuration.getHostname(), configuration.getPort()));
         }
 
         p.addLast(new ProtobufVarint32FrameDecoder());
@@ -50,6 +55,11 @@ public class PacketBufClientInitializer extends ChannelInitializer<SocketChannel
         p.addLast(new ProtobufVarint32LengthFieldPrepender());
         p.addLast(new ProtobufEncoder());
 
-        p.addLast(new PacketBufClientHandler());
+        p.addLast(packetBufClientHandler);
     }
+
+	public PacketBufClientHandler getPacketBufClientHandler() {
+		return packetBufClientHandler;
+	}
+    
 }

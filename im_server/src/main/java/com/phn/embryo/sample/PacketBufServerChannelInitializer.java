@@ -1,9 +1,8 @@
-package com.phn.tojoy.channel;
+package com.phn.embryo.sample;
 
 import com.google.protobuf.MessageLite;
 import com.phn.embryo.AbstractEmbryoChannelInitializer;
 import com.phn.embryo.EmbryoNamespacesHub;
-import com.phn.embryo.sample.PacketBufServerHandler;
 import com.phn.proto.PhnNetBuf.PacketBuf;
 
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -21,7 +20,7 @@ public class PacketBufServerChannelInitializer extends AbstractEmbryoChannelInit
 
 	@Override
 	public ChannelInboundHandlerAdapter getInPacketHandler() {
-		return new PacketBufServerHandler();
+			return new PacketBufServerHandler();
 	}
 
 }

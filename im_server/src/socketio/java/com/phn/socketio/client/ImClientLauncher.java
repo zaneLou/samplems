@@ -56,7 +56,7 @@ public class ImClientLauncher implements ImClient{
 		log.info("start client ");
 		try {
 			PhnAuthenticator authenticator = new BcryptAuthenticator();;
-			socket = IO.socket("https://" + host + ":"  + port + PhnConstants.SocketIO_Namespace, createOptions());
+			socket = IO.socket("https://" + host + ":"  + port + PhnConstants.IM_Namespace, createOptions());
 			ConnectListener connectListener = new ConnectListener(this, authenticator);
 			connectListener.setUsername(username);
 			connectListener.setPassword(password);

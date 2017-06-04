@@ -2,9 +2,6 @@ package com.phn.socketio.test.client.listener;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
 import com.phn.base.component.PhnConstants;
 import com.phn.socketio.test.client.AbstractImClientTests;
 

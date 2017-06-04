@@ -4,7 +4,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import com.corundumstudio.socketio.Configuration;
+import com.google.protobuf.MessageLite;
 import com.phn.embryo.listener.EmbryoClientListeners;
+import com.phn.embryo.listener.EmbryoReceiverListener;
 import com.phn.embryo.listener.EmbryoRegisterListener;
 
 import io.netty.util.internal.PlatformDependent;
@@ -12,8 +14,9 @@ import io.netty.util.internal.PlatformDependent;
 public class EmbryoNamespace implements EmbryoClientListeners{
 
 	private final String name;
-	private final Map<String, EmbryoTunnel> sessionId2clients = PlatformDependent.newConcurrentHashMap();
+	private final Map<String, AbstractEmbryoTunnel> sessionId2clients = PlatformDependent.newConcurrentHashMap();
 
+	private final Queue<EmbryoReceiverListener> receiverListeners = new ConcurrentLinkedQueue<EmbryoReceiverListener>();
     private final Queue<EmbryoRegisterListener> registerListeners = new ConcurrentLinkedQueue<EmbryoRegisterListener>();
     
     public EmbryoNamespace(String name, Configuration configuration) {
@@ -22,7 +25,7 @@ public class EmbryoNamespace implements EmbryoClientListeners{
     }
     
     //Map
-	public void addClient(EmbryoTunnel client) {
+	public void addClient(AbstractEmbryoTunnel client) {
 		sessionId2clients.put(client.getSessionId(), client);
 	}
 
@@ -30,7 +33,7 @@ public class EmbryoNamespace implements EmbryoClientListeners{
 		sessionId2clients.remove(sessionId);
 	}
 
-	public EmbryoTunnel get(String sessionId) {
+	public AbstractEmbryoTunnel get(String sessionId) {
 		return sessionId2clients.get(sessionId);
 	}
 
@@ -38,13 +41,24 @@ public class EmbryoNamespace implements EmbryoClientListeners{
 		return name;
 	}
 
-	//Lister
+	//Listener
+	@Override
+	public void addReceiverListener(EmbryoReceiverListener listener) {
+		receiverListeners.add(listener);
+	}
+	
+    public void onReceivePacket(AbstractEmbryoTunnel client, MessageLite packet){
+    	for (EmbryoReceiverListener receiverListener : receiverListeners) {
+    		receiverListener.onReceiver(client, packet);
+		}
+    }
+    
 	@Override
 	public void addRegisterListener(EmbryoRegisterListener listener) {
 		registerListeners.add(listener);
 	}
 	
-	public void onRegister(EmbryoTunnel client, EmbryoPacket packet){
+	public void onRegister(AbstractEmbryoTunnel client, MessageLite packet){
 		for (EmbryoRegisterListener registerListener : registerListeners) {
 			registerListener.onRegister(client, packet);
 		}
@@ -53,5 +67,7 @@ public class EmbryoNamespace implements EmbryoClientListeners{
     public void shutdown() {
 
     }
+
+	
 	
 }

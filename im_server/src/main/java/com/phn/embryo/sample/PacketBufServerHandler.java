@@ -26,7 +26,7 @@ public class PacketBufServerHandler extends SimpleChannelInboundHandler<PacketBu
 
 	@Override
 	public void channelRead0(ChannelHandlerContext ctx, PacketBuf packetBuf) throws Exception {
-		log.info("read packetBuf:{} from client", packetBuf);
+		log.info("read packetBuf:{}from client", packetBuf);
 		//just send back
 		ctx.writeAndFlush(packetBuf);
 	}
